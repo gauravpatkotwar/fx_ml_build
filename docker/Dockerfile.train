@@ -16,4 +16,5 @@ COPY pyproject.toml ./
 
 RUN pip install -e .
 
-CMD ["python", "scripts/train_models.py"]
+# Run training weekly (sleeps between runs)
+CMD ["python", "-c", "\nimport time\nimport subprocess\nimport os\nfrom datetime import datetime\n\ndef run_training():\n    print(f'[{datetime.now()}] Starting training...')\n    result = subprocess.run(['python', 'scripts/train_models.py'], capture_output=True, text=True)\n    print(result.stdout)\n    if result.stderr:\n        print('STDERR:', result.stderr)\n    print(f'[{datetime.now()}] Training complete')\n\n# Run immediately on start\nrun_training()\n\n# Then run weekly (every 7 days)\nwhile True:\n    time.sleep(7 * 24 * 60 * 60)  # 7 days\n    run_training()\n"]
