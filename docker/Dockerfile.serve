@@ -3,7 +3,7 @@ FROM python:3.11-slim
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl && \
+    curl supervisor && \
     rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt ./
@@ -12,6 +12,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY src/ ./src/
 COPY config/ ./config/
 COPY pyproject.toml ./
+COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
 RUN pip install -e .
 
@@ -20,4 +21,4 @@ EXPOSE 8000 8001
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
   CMD curl -f http://localhost:8000/health || exit 1
 
-CMD python -m src.serving.api & python -m src.serving.mcp_server models/ensemble_latest data/processed
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
