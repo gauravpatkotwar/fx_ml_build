@@ -3,7 +3,7 @@ services:
     name: fx-ml-api
     runtime: docker
     dockerfilePath: ./docker/Dockerfile.serve
-    plan: starter
+    plan: free
     envVars:
       - key: OANDA_API_KEY
         sync: false
@@ -12,15 +12,18 @@ services:
       - key: OANDA_ENVIRONMENT
         value: practice
       - key: MLFLOW_TRACKING_URI
-        sync: false
+        value: "sqlite:///mlflow.db"
     healthCheckPath: /health
     autoDeploy: true
+    startCommand: |
+      python -m src.serving.api &
+      python -m src.serving.mcp_server models/ensemble_latest data/processed
 
   - type: worker
     name: fx-ml-paper-trader
     runtime: docker
     dockerfilePath: ./docker/Dockerfile.serve
-    plan: starter
+    plan: free
     envVars:
       - key: OANDA_API_KEY
         sync: false
@@ -34,7 +37,7 @@ services:
     name: fx-ml-trainer
     runtime: docker
     dockerfilePath: ./docker/Dockerfile.train
-    plan: starter
+    plan: free
     schedule: "0 2 * * 0"
     envVars:
       - key: OANDA_API_KEY
@@ -44,5 +47,5 @@ services:
       - key: OANDA_ENVIRONMENT
         value: practice
       - key: MLFLOW_TRACKING_URI
-        sync: false
+        value: "sqlite:///mlflow.db"
     autoDeploy: true

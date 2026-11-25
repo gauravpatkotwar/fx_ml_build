@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:v2.8.0
+    ports:
+      - "5000:5000"
+    environment:
+      - BACKEND_STORE_URI=sqlite:///mlflow.db
+      - ARTIFACT_ROOT=./mlartifacts
+    volumes:
+      - mlflow_data:/mlflow
+    command: mlflow server --host 0.0.0.0 --port 5000
+
+  trainer:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.train
+    environment:
+      - OANDA_API_KEY=${OANDA_API_KEY}
+      - OANDA_ACCOUNT_ID=${OANDA_ACCOUNT_ID}
+      - OANDA_ENVIRONMENT=practice
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
+    volumes:
+      - ../data:/app/data
+      - ../models:/app/models
+    depends_on:
+      - mlflow
+    profiles: ["training"]
+
+  paper-trader:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.serve
+    environment:
+      - OANDA_API_KEY=${OANDA_API_KEY}
+      - OANDA_ACCOUNT_ID=${OANDA_ACCOUNT_ID}
+      - OANDA_ENVIRONMENT=practice
+    volumes:
+      - ../data:/app/data
+      - ../models:/app/models
+    command: python -m src.paper_trading.simulator
+    profiles: ["paper-trading"]
+
+  api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.serve
+    ports:
+      - "8000:8000"
+      - "8001:8001"
+    environment:
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
+    volumes:
+      - ../models:/app/models
+    command: python -m src.serving.api & python -m src.serving.mcp_server models/ensemble_latest data/processed
+    depends_on:
+      - mlflow
+    profiles: ["serving"]
+
+volumes:
+  mlflow_data:
