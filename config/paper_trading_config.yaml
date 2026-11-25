@@ -1,0 +1,43 @@
+# Paper Trading Configuration
+
+paper_trading:
+  instruments:
+    - "EUR_USD"
+    - "GBP_USD"
+    - "USD_JPY"
+    - "USD_CHF"
+    - "AUD_USD"
+    - "USD_CAD"
+    - "NZD_USD"
+    - "EUR_GBP"
+    - "EUR_JPY"
+    - "GBP_JPY"
+
+  model_path: "models/ensemble_latest"
+  granularity: "H1"
+  lookback_bars: 500
+  prediction_horizon: 4
+
+  # Risk management
+  max_position_pct: 0.1
+  max_portfolio_heat: 0.2
+  stop_loss_atr_mult: 2.0
+  take_profit_atr_mult: 3.0
+  daily_loss_limit_pct: 0.03
+
+  # Execution
+  base_spread_pips: 0.8
+  commission_per_million: 5.0
+  latency_ms: 100
+
+  # Trading hours (UTC)
+  trading_hours:
+    enabled: true
+    start_hour: 0
+    end_hour: 24
+    exclude_weekends: true
+
+  # Monitoring
+  status_print_interval_seconds: 300
+  state_save_interval_seconds: 60
+  state_file: "paper_trading_state.json"

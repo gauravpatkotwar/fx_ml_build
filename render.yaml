@@ -1,0 +1,48 @@
+services:
+  - type: web
+    name: fx-ml-api
+    runtime: docker
+    dockerfilePath: ./docker/Dockerfile.serve
+    plan: starter
+    envVars:
+      - key: OANDA_API_KEY
+        sync: false
+      - key: OANDA_ACCOUNT_ID
+        sync: false
+      - key: OANDA_ENVIRONMENT
+        value: practice
+      - key: MLFLOW_TRACKING_URI
+        sync: false
+    healthCheckPath: /health
+    autoDeploy: true
+
+  - type: worker
+    name: fx-ml-paper-trader
+    runtime: docker
+    dockerfilePath: ./docker/Dockerfile.serve
+    plan: starter
+    envVars:
+      - key: OANDA_API_KEY
+        sync: false
+      - key: OANDA_ACCOUNT_ID
+        sync: false
+      - key: OANDA_ENVIRONMENT
+        value: practice
+    autoDeploy: true
+
+  - type: cron
+    name: fx-ml-trainer
+    runtime: docker
+    dockerfilePath: ./docker/Dockerfile.train
+    plan: starter
+    schedule: "0 2 * * 0"
+    envVars:
+      - key: OANDA_API_KEY
+        sync: false
+      - key: OANDA_ACCOUNT_ID
+        sync: false
+      - key: OANDA_ENVIRONMENT
+        value: practice
+      - key: MLFLOW_TRACKING_URI
+        sync: false
+    autoDeploy: true

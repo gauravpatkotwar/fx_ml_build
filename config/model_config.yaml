@@ -1,0 +1,69 @@
+# ML Model Configuration
+
+training:
+  # Prediction target
+  prediction_horizon: 4      # 4 hours ahead (H1 bars)
+  label_type: "classification"  # classification, regression, quantile
+  n_classes: 5               # Strong Down, Down, Flat, Up, Strong Up
+  lookback_window: 500       # Bars for feature generation
+
+  # Walk-forward validation
+  validation:
+    method: "walk_forward"
+    n_splits: 12
+    train_size: 0.7
+    test_size: 0.2
+    embargo_pct: 0.01        # Gap between train/test
+    expanding_window: true
+
+  # Hyperparameter optimization
+  optuna:
+    n_trials: 100
+    timeout: 3600
+    sampler: "TPE"
+    pruner: "MedianPruner"
+
+models:
+  xgboost:
+    n_estimators: 500
+    max_depth: 6
+    learning_rate: 0.01
+    subsample: 0.8
+    colsample_bytree: 0.8
+    min_child_weight: 3
+    reg_alpha: 0.1
+    reg_lambda: 1.0
+    random_state: 42
+    n_jobs: -1
+    tree_method: "hist"
+    enable_categorical: true
+
+  lightgbm:
+    n_estimators: 500
+    num_leaves: 63
+    learning_rate: 0.01
+    feature_fraction: 0.8
+    bagging_fraction: 0.8
+    bagging_freq: 5
+    min_child_samples: 20
+    reg_alpha: 0.1
+    reg_lambda: 1.0
+    random_state: 42
+    n_jobs: -1
+    verbosity: -1
+
+  random_forest:
+    n_estimators: 300
+    max_depth: 15
+    min_samples_split: 5
+    min_samples_leaf: 2
+    max_features: "sqrt"
+    random_state: 42
+    n_jobs: -1
+    class_weight: "balanced_subsample"
+
+ensemble:
+  method: "stacking"
+  meta_learner: "logistic"
+  cv_folds: 5
+  weights: [0.4, 0.35, 0.25]  # XGB, LGBM, RF

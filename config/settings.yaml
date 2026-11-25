@@ -1,0 +1,47 @@
+# Main Configuration for FX ML Trading System
+
+# Environment
+environment: "development"  # development, staging, production
+
+# Data settings
+data:
+  raw_path: "data/raw"
+  processed_path: "data/processed"
+  external_path: "data/external"
+  
+# Model settings
+model:
+  registry_path: "models"
+  mlflow_tracking_uri: "${MLFLOW_TRACKING_URI}"
+  experiment_name: "fx-ml-trading"
+
+# Backtest settings
+backtest:
+  initial_capital: 100000
+  base_currency: "USD"
+  max_leverage: 30
+
+# Paper trading settings
+paper_trading:
+  enabled: true
+  account_type: "practice"  # practice or live
+  check_interval_seconds: 60
+
+# Serving settings
+serving:
+  api_host: "0.0.0.0"
+  api_port: 8000
+  mcp_host: "0.0.0.0"
+  mcp_port: 8001
+
+# Monitoring
+monitoring:
+  drift_check_interval_hours: 24
+  performance_check_interval_hours: 6
+  alert_webhook_url: "${ALERT_WEBHOOK_URL}"
+
+# Logging
+logging:
+  level: "INFO"
+  format: "json"
+  file: "logs/fx_ml.log"

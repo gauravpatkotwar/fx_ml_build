@@ -1,0 +1,47 @@
+name: Model Training
+
+on:
+  schedule:
+    - cron: '0 2 * * 0'
+  workflow_dispatch:
+    inputs:
+      force_retrain:
+        type: boolean
+        default: false
+
+jobs:
+  train:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Download latest data
+        env:
+          OANDA_API_KEY: ${{ secrets.OANDA_API_KEY }}
+          OANDA_ACCOUNT_ID: ${{ secrets.OANDA_ACCOUNT_ID }}
+        run: python scripts/download_data.py --incremental
+
+      - name: Train models
+        env:
+          MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI }}
+        run: python scripts/train_models.py
+
+      - name: Run backtest validation
+        run: python scripts/run_backtest.py --model latest
+
+      - name: Publish model artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: model-artifacts
+          path: models/
+          retention-days: 30

@@ -1,0 +1,49 @@
+# Backtesting Configuration
+
+backtest:
+  # Capital & leverage
+  initial_capital: 100000    # $100k demo account
+  base_currency: "USD"
+  max_leverage: 30           # OANDA major pairs
+
+  # Realistic execution
+  execution:
+    spread_model: "dynamic"  # Based on hour, volatility
+    slippage_model: "square_root"  # Market impact
+    base_spread_pips: 0.8    # EUR_USD typical
+    commission_per_million: 5  # $5 per $1M
+    latency_ms: 100          # Simulated network latency
+    partial_fill_prob: 0.02
+    reject_prob: 0.001
+
+  # Risk management
+  risk:
+    max_position_size_pct: 0.1      # 10% per trade
+    max_portfolio_heat: 0.2         # 20% total risk
+    max_correlated_positions: 3
+    correlation_threshold: 0.7
+    daily_loss_limit_pct: 0.03      # 3% daily stop
+    weekly_loss_limit_pct: 0.06     # 6% weekly stop
+    max_drawdown_pct: 0.15          # 15% max DD
+
+  # Position management
+  position:
+    stop_loss_atr_mult: 2.0
+    take_profit_atr_mult: 3.0
+    trailing_stop_atr_mult: 1.5
+    allow_hedging: true
+    allow_pyramiding: false
+
+  # Metrics to compute
+  metrics:
+    - "total_return"
+    - "annualized_return"
+    - "sharpe_ratio"
+    - "sortino_ratio"
+    - "calmar_ratio"
+    - "max_drawdown"
+    - "win_rate"
+    - "profit_factor"
+    - "expectancy"
+    - "avg_trade_duration"
+    - "tail_ratio"
