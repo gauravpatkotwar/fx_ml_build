@@ -6,11 +6,12 @@ import numpy as np
 import pandas as pd
 import joblib
 from pathlib import Path
+from sklearn.base import BaseEstimator, ClassifierMixin
 
 logger = logging.getLogger(__name__)
 
 
-class BaseModel(ABC):
+class BaseModel(BaseEstimator, ClassifierMixin, ABC):
     """Abstract base class for all models"""
 
     def __init__(self, name: str, params: Dict = None):
@@ -19,6 +20,14 @@ class BaseModel(ABC):
         self.model = None
         self.feature_names = None
         self.is_fitted = False
+        
+    def __sklearn_tags__(self):
+        from sklearn.utils import Tags
+        return Tags(
+            estimator_type="classifier",
+            requires_y=True,
+            requires_fit=True,
+        )
 
     @abstractmethod
     def fit(self, X: np.ndarray, y: np.ndarray, X_val: np.ndarray = None, y_val: np.ndarray = None) -> Dict:
@@ -61,10 +70,14 @@ class BaseModel(ABC):
         """Load model from disk"""
         path = Path(path)
         data = joblib.load(path)
-        instance = cls(data["name"], data["params"])
+        # Handle both old format (name, params) and new format (params only)
+        if "name" in data and "params" in data:
+            instance = cls(data["params"])
+        else:
+            instance = cls(data.get("params", {}))
         instance.model = data["model"]
-        instance.feature_names = data["feature_names"]
-        instance.is_fitted = data["is_fitted"]
+        instance.feature_names = data.get("feature_names")
+        instance.is_fitted = data.get("is_fitted", True)
         return instance
 
     def get_feature_importance(self, top_n: int = 20) -> List[Tuple[str, float]]:

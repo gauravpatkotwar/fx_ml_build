@@ -57,7 +57,9 @@ class FeatureEngineer:
 
     def _parkinson_vol(self, df: pd.DataFrame, window: int) -> pd.Series:
         rs = np.log(df["high"] / df["low"]) ** 2
-def _add_technical_indicators(self, df: pd.DataFrame) -> pd.DataFrame:
+        return rs.rolling(window).mean() ** 0.5 / (4 * np.log(2)) ** 0.5
+
+    def _add_technical_indicators(self, df: pd.DataFrame) -> pd.DataFrame:
         close = df["close"]; high = df["high"]; low = df["low"]; volume = df["volume"]
         df["sma_20"] = ta.trend.sma_indicator(close, window=20)
         df["sma_50"] = ta.trend.sma_indicator(close, window=50)
@@ -72,7 +74,7 @@ def _add_technical_indicators(self, df: pd.DataFrame) -> pd.DataFrame:
         df["adx"] = ta.trend.adx(high, low, close, window=14)
         df["adx_pos"] = ta.trend.adx_pos(high, low, close, window=14)
         df["adx_neg"] = ta.trend.adx_neg(high, low, close, window=14)
-        aroon = ta.trend.AroonIndicator(close, window=25)
+        aroon = ta.trend.AroonIndicator(high, low, window=25)
         df["aroon_up"] = aroon.aroon_up(); df["aroon_down"] = aroon.aroon_down()
         df["aroon_indicator"] = aroon.aroon_indicator()
         df["rsi_14"] = ta.momentum.rsi(close, window=14)
@@ -88,7 +90,7 @@ def _add_technical_indicators(self, df: pd.DataFrame) -> pd.DataFrame:
         df["bb_position"] = (close - df["bb_lower"]) / (df["bb_upper"] - df["bb_lower"])
         df["atr_14"] = ta.volatility.average_true_range(high, low, close, window=14)
         df["atr_21"] = ta.volatility.average_true_range(high, low, close, window=21)
-        df["natr"] = ta.volatility.normalized_average_true_range(high, low, close, window=14)
+        df["natr"] = df["atr_14"] / close  # Manual NATR calculation
         kc = ta.volatility.KeltnerChannel(high, low, close, window=20)
         df["kc_upper"] = kc.keltner_channel_hband(); df["kc_lower"] = kc.keltner_channel_lband()
         df["kc_mid"] = kc.keltner_channel_mband(); df["kc_width"] = (df["kc_upper"] - df["kc_lower"]) / df["kc_mid"]
@@ -97,7 +99,9 @@ def _add_technical_indicators(self, df: pd.DataFrame) -> pd.DataFrame:
         df["donchian_position"] = (close - df["donchian_lower"]) / (df["donchian_upper"] - df["donchian_lower"])
         df["volume_sma_20"] = volume.rolling(20).mean(); df["volume_ratio"] = volume / df["volume_sma_20"]
         df["obv"] = ta.volume.on_balance_volume(close, volume)
-def _add_statistical_features(self, df: pd.DataFrame) -> pd.DataFrame:
+        return df
+
+    def _add_statistical_features(self, df: pd.DataFrame) -> pd.DataFrame:
         close = df["close"]; returns = df["log_return"]
         for window in self.lookback_windows:
             df[f"trend_slope_{window}"] = self._rolling_slope(close, window)
@@ -163,11 +167,8 @@ def _add_statistical_features(self, df: pd.DataFrame) -> pd.DataFrame:
         if len(L) < 2: return np.nan
         try: return -np.polyfit(np.log(range(1, k_max+1)), np.log(L), 1)[0]
         except: return np.nan
-        df["cmf"] = ta.volume.chaikin_money_flow(high, low, close, volume, window=20)
-        ichimoku = ta.trend.IchimokuIndicator(high, low)
-        df["ichimoku_a"] = ichimoku.ichimoku_a(); df["ichimoku_b"] = ichimoku.ichimoku_b()
-        df["ichimoku_base"] = ichimoku.ichimoku_base_line(); df["ichimoku_conversion"] = ichimoku.ichimoku_conversion_line()
-def _add_pattern_features(self, df: pd.DataFrame) -> pd.DataFrame:
+
+    def _add_pattern_features(self, df: pd.DataFrame) -> pd.DataFrame:
         open_ = df["open"]; high = df["high"]; low = df["low"]; close = df["close"]
         df["doji"] = (abs(close - open_) / (high - low + 1e-10) < 0.1).astype(int)
         df["hammer"] = ((high - low) > 3 * abs(close - open_)) & \
@@ -237,8 +238,6 @@ def _add_pattern_features(self, df: pd.DataFrame) -> pd.DataFrame:
             for q in [0.1, 0.5, 0.9]:
                 df[f"label_q{int(q*100)}"] = df["future_log_return"]
         return df
-        return df
-        return np.sqrt(rs.rolling(window).mean() / (4 * np.log(2))) * np.sqrt(252 * 24)
 
     def _garman_klass_vol(self, df: pd.DataFrame, window: int) -> pd.Series:
         log_hl = np.log(df["high"] / df["low"]) ** 2

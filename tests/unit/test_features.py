@@ -8,7 +8,7 @@ from src.data.features import FeatureEngineer
 
 @pytest.fixture
 def sample_data():
-    dates = pd.date_range(start="2024-01-01", periods=1000, freq="1H")
+    dates = pd.date_range(start="2024-01-01", periods=1000, freq="1h")
     np.random.seed(42)
     returns = np.random.normal(0, 0.001, 1000)
     price = 1.1000 * np.exp(np.cumsum(returns))

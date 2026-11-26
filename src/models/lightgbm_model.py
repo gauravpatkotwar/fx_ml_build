@@ -38,6 +38,7 @@ class LightGBMModel(BaseModel):
         self.feature_names = [f"f{i}" for i in range(X.shape[1])]
         n_classes = len(np.unique(y))
         self.params["num_class"] = n_classes
+        self.n_classes_ = n_classes  # Store for predict_proba
 
         train_data = lgb.Dataset(X, label=y)
         valid_sets = [train_data]
@@ -81,7 +82,24 @@ class LightGBMModel(BaseModel):
         """Predict probabilities"""
         if not self.is_fitted:
             raise ValueError("Model not fitted")
-        return self.model.predict(X, num_iteration=self.model.best_iteration)
+        preds = self.model.predict(X, num_iteration=self.model.best_iteration)
+        # Ensure 2D output for multi-class
+        if preds.ndim == 1:
+            # Binary case or single class - convert to 2D
+            # This can happen if model was trained on single class
+            n_classes = getattr(self, 'n_classes_', 2)
+            if n_classes == 2:
+                preds = np.column_stack([1 - preds, preds])
+            else:
+                # Multi-class with single class seen - create uniform distribution
+                preds_1d = preds
+                preds = np.full((len(X), n_classes), 1.0 / n_classes)
+                # Put all probability on the predicted class
+                pred_classes = np.round(preds_1d * (n_classes - 1)).astype(int)
+                pred_classes = np.clip(pred_classes, 0, n_classes - 1)
+                for i, c in enumerate(pred_classes):
+                    preds[i, c] = 1.0
+        return preds
 
     def get_feature_importance(self, top_n: int = 20) -> List[Tuple[str, float]]:
         """Get feature importance"""

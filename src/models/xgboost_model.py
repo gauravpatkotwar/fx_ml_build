@@ -35,6 +35,14 @@ class XGBoostModel(BaseModel):
     def fit(self, X: np.ndarray, y: np.ndarray, X_val: np.ndarray = None, y_val: np.ndarray = None) -> Dict:
         """Train XGBoost model"""
         self.feature_names = [f"f{i}" for i in range(X.shape[1])]
+        n_classes = len(np.unique(y))
+        
+        # Set num_class for multi-class classification
+        params = self.params.copy()
+        params["num_class"] = n_classes
+        # Remove unsupported params for native xgb.train API
+        params.pop("n_estimators", None)
+        params.pop("enable_categorical", None)
 
         dtrain = xgb.DMatrix(X, label=y)
         evals = [(dtrain, "train")]
@@ -44,7 +52,7 @@ class XGBoostModel(BaseModel):
             evals.append((dval, "val"))
 
         self.model = xgb.train(
-            self.params,
+            params,
             dtrain,
             num_boost_round=self.params.get("n_estimators", 500),
             evals=evals,
