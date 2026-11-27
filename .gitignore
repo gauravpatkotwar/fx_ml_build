@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Data files - never commit
+*.bi5
+*.parquet
+*.csv
+*.h5
+*.feather
+
+# Temporary directories
+/tmp/
+/tmp/dukascopy_cache/
+/tmp/features_*.parquet
+
+# Model artifacts (generated in CI)
+*.joblib
+*.pkl
+models/
+artifacts/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+logs/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
+Thumbs.db

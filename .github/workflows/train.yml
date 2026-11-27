@@ -1,20 +1,27 @@
-name: Model Training
+name: Model Training (Dukascopy Tick Pipeline)
 
 on:
   schedule:
-    - cron: '0 2 * * 0'
+    - cron: '0 2 * * 0'  # Weekly Sunday 02:00 UTC
   workflow_dispatch:
     inputs:
       force_retrain:
         type: boolean
         default: false
+        description: 'Force retrain even if artifacts exist'
 
 jobs:
   train:
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 180
+    permissions:
+      contents: write
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -23,25 +30,29 @@ jobs:
           cache: 'pip'
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
 
-      - name: Download latest data
-        env:
-          OANDA_API_KEY: ${{ secrets.OANDA_API_KEY }}
-          OANDA_ACCOUNT_ID: ${{ secrets.OANDA_ACCOUNT_ID }}
-        run: python scripts/download_data.py --incremental
+      - name: Download and process tick data
+        run: |
+          python src/data/tick_loader.py
 
-      - name: Train models
-        env:
-          MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI }}
-        run: python scripts/train_models.py
+      - name: Train model and run backtest
+        run: |
+          python train.py
 
-      - name: Run backtest validation
-        run: python scripts/run_backtest.py --model latest
+      - name: Verify artifacts
+        run: |
+          ls -la artifacts/
+          test -f artifacts/fx_model.joblib && echo "Model exists"
+          test -f artifacts/backtest_report.json && echo "Report exists"
 
-      - name: Publish model artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: model-artifacts
-          path: models/
-          retention-days: 30
+      - name: Commit artifacts
+        if: success()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add artifacts/fx_model.joblib artifacts/backtest_report.json artifacts/feature_names.json
+          git commit -m "chore: update model artifacts [skip ci]" || echo "No changes to commit"
+          git push origin HEAD:${{ github.ref_name }} || echo "Push failed or no changes"
